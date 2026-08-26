@@ -1,13 +1,5 @@
-"""ECG arrhythmia classification from scratch — C1-C3 rehearsal project.
-
-Modules hold algorithms; notebooks hold experiments. No algorithm logic in a notebook.
-
-    from ecg.config import Config
-    from ecg.data import load_split
-    from ecg.train import train
-
-See PLAN.md for the phase structure and reports/data_card.md for the dataset.
-"""
+# ecg arrhythmia project, courses 1 to 3 practice
+# the algorithms live in these modules, the experiments live in the notebooks
 
 __version__ = "0.1.0"
 

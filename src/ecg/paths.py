@@ -1,4 +1,6 @@
-"""Project paths, resolved from this file so code works from any working directory."""
+# this file holds the paths of the project
+# we build them from this file location, so the code works from any folder
+
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]

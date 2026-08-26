@@ -1,15 +1,8 @@
-"""Phase 0 — build a patient-disjoint MIT-BIH beat dataset from raw PhysioNet records.
+# this file builds the dataset from the raw physionet records
+# run it with: python -m ecg.build_dataset
+# it downloads the 48 records, cuts one window around every heartbeat,
+# adds 4 timing features, and saves splits that never share a patient
 
-Run end to end with:
-
-    python -m ecg.build_dataset
-
-Downloads the 48 MIT-BIH records (~90 MB, skipped if already present), extracts one
-fixed-width window per annotated heartbeat plus four R-R timing features, and writes
-train/dev/test splits that share no patient.
-
-See PLAN.md for the reasoning behind every constant here.
-"""
 from __future__ import annotations
 
 import collections

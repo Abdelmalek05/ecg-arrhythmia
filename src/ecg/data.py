@@ -1,9 +1,6 @@
-"""Loading the built dataset. Plumbing — no learning content here.
+# this file loads the beats we built in phase 0
+# it also picks the features, picks the classes, and cuts the data into small batches
 
-Convention: arrays on disk are stored rows-first, (m, n_x). The course writes
-examples as columns, (n_x, m). `load_split(..., columns=True)` transposes for you;
-pick one convention per notebook and stay with it.
-"""
 from __future__ import annotations
 
 import json

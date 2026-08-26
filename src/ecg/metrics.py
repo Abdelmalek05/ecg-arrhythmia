@@ -1,9 +1,6 @@
-"""Evaluation metrics. Plumbing — no learning content here.
+# this file measures how good a model is
+# accuracy lies here because most beats are normal, so we use macro f1
 
-Accuracy is misleading on this data: the majority class is ~89%, so a model that
-ignores S and F entirely still scores ~96%. `macro_f1` is the project's single
-number. See PLAN.md.
-"""
 from __future__ import annotations
 
 import numpy as np

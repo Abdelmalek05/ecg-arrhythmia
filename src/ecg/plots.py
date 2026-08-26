@@ -1,7 +1,6 @@
-"""Shared plotting. Plumbing — no learning content here.
+# this file draws the figures we use in the reports
+# every figure is saved inside results/figures
 
-Every figure is saved under results/figures/ so reports can reference it.
-"""
 from __future__ import annotations
 
 import numpy as np

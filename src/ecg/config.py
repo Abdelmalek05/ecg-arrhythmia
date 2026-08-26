@@ -1,7 +1,6 @@
-"""One dataclass holding every knob, so an ablation is `replace(cfg, axis=value)`.
+# this file holds every setting of a run in one place
+# to make an experiment we just change one field and run again
 
-Each field maps to one Phase 4 ablation axis. See PLAN.md.
-"""
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict

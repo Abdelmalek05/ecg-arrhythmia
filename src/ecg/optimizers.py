@@ -1,14 +1,6 @@
-"""Parameter update rules — Phase 4 ablation axis 5.
+# this file will hold the update rules: gd, momentum, rmsprop, adam
+# it is phase 4 work, so for now only the names are here
 
-TO IMPLEMENT (Phase 4).
-
-    gd        W -= lr * dW
-    momentum  v = beta1*v + (1-beta1)*dW           ; W -= lr * v
-    rmsprop   s = beta2*s + (1-beta2)*dW**2        ; W -= lr * dW / (sqrt(s)+eps)
-    adam      both, with bias correction using the step counter t
-
-State lives in a dict so the same `update_parameters` call works for all four.
-"""
 from __future__ import annotations
 
 import numpy as np
