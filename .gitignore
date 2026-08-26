@@ -1,0 +1,26 @@
+# Data — regenerable from src/ecg/build_dataset.py, ~293 MB, never committed.
+# splits.json is the exception: force-add it with `git add -f data/build/splits.json`
+# because it records which patients went into which split.
+data/physionet/
+data/build/
+!data/build/splits.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb~
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

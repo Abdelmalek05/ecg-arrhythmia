@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ecg"
+version = "0.1.0"
+description = "ECG arrhythmia classification from scratch in NumPy — patient-disjoint MIT-BIH"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "matplotlib>=3.7",
+    "scikit-learn>=1.3",
+    "wfdb>=4.1",
+    "jupyter>=1.0",
+]
+
+[project.optional-dependencies]
+torch = ["torch>=2.0"]
+
+[project.scripts]
+ecg-build-dataset = "ecg.build_dataset:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
