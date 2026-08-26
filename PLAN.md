@@ -5,7 +5,8 @@
 
 Supersedes `ECG_Heartbeat_Project_Plan.md`, `ECG_Project_Plan_v2.md`, `ECG_Project_Plan_v3.md` — those can be deleted.
 
-**Status: Phase 0 complete. Phase 1 (repo setup) is next.**
+**Status: Phases 0 and 1 complete. Phase 2 (C1 mechanics) is next.**
+Repo: https://github.com/Abdelmalek05/ecg-arrhythmia
 
 ---
 
@@ -151,7 +152,7 @@ Artifacts: `src/build_dataset.py`, `data/build/*.npy`, `data/build/splits.json`,
 
 ---
 
-## Phase 1 — Repository setup ← NEXT
+## Phase 1 — Repository setup ✅ COMPLETE
 
 Do this before writing model code, so every experiment is tracked from the first commit.
 
@@ -170,14 +171,19 @@ Do this before writing model code, so every experiment is tracked from the first
 5. **`README.md`** — what the project is, the data card summary table, and a "reproduce from scratch" section: clone → `pip install -e .` → `python -m ecg.build_dataset`. The repo must rebuild the dataset without any file over 1 MB being committed.
 6. **First commit** — the Phase 0 work: `src/`, `reports/data_card.md`, `results/figures/`, `PLAN.md`.
 7. **GitHub repo** — create via `gh repo create`, push. *Decide public vs. private at this point.*
-8. **Commit rhythm from here:** one commit per meaningful step, one branch per phase (`phase2-c1-mechanics`, `phase3-softmax`, …), merged to `main` when the phase's gate passes. Notebooks: *Restart & Run All* before committing.
+8. **Commit rhythm from here:** work directly on `main` — one commit per meaningful step. No feature branches: with a single contributor, no review and no CI, they add ceremony without isolating anything. Instead **tag at each phase boundary** once its gate passes:
+   ```bash
+   git tag phase-0-data && git push origin phase-0-data
+   ```
+   That gives legible landmarks (`git diff phase-0-data..HEAD`) and a release point on GitHub, with no merges. Branch only for a genuine spike you might throw away.
+   Notebooks: *Restart & Run All* before committing.
 
 **Deliverable:** a clean repo where someone can clone, `pip install -e .`, and reproduce the whole dataset from code alone.
 **Done when:** a fresh clone rebuilds `data/build/` and the numbers match the data card.
 
 ---
 
-## Phase 2 — C1 mechanics: binary, N vs. V
+## Phase 2 — C1 mechanics: binary, N vs. V ← NEXT
 
 Filter to two classes. The goal is **working backprop**, not a good score.
 
@@ -281,8 +287,8 @@ Priority if revisited:
 | # | Phase | Ties to | Effort | Status |
 |---|---|---|---|---|
 | 0 | Build the dataset | — | ½ day | ✅ done |
-| 1 | Repository setup | — | 1 hour | ← next |
-| 2 | C1 mechanics, N vs. V | C1W2–W4 | 2–3 days | |
+| 1 | Repository setup | — | 1 hour | ✅ done |
+| 2 | C1 mechanics, N vs. V | C1W2–W4 | 2–3 days | ← next |
 | 3 | 4-class softmax | C2W3 | 1 day | |
 | 4 | C2 ablation lab | C2W1–W3 | 2–3 days | |
 | 5 | C3 strategy memo | C3W1–W2 | 2 days | |
@@ -300,3 +306,4 @@ Priority if revisited:
 - **Never touch the test set** until Phase 5.
 - **Numerical stability.** Log-sum-exp for softmax CE; clip before `log` in BCE — the BCE one bites in Phase 2, before softmax exists.
 - **Commit before each phase's experiments**, so a bad refactor never costs logged results.
+- **Skeletons raise `NotImplementedError` with the phase in the message** — that is the to-do list.
