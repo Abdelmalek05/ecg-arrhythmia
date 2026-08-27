@@ -242,6 +242,7 @@ file rather than from memory.
 
 | | |
 |---|---|
+| `01_data_exploration` | **start here** — what one beat is, the classes, and why the split is by patient |
 | `02_logistic_regression` | one neuron from scratch, checked against scikit-learn |
 | `03_shallow_nn` | one hidden layer; why three seeds are mandatory |
 | `04_deep_nn_gradcheck` | L-layer network and numerical gradient checking |
