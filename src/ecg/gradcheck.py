@@ -78,24 +78,30 @@ def gradient_check(parameters, grads, X, Y, hidden_activation="tanh",
     else:
         loss_name = "binary_crossentropy"
 
+    n_weight_matrices = 0
+    for key in parameters:
+        if key.startswith("W"):
+            n_weight_matrices = n_weight_matrices + 1
+
+    def loss_at(theta_vector):
+        # rebuild the parameters, run forward, return the loss
+        p = vector_to_dictionary(theta_vector, keys, shapes)
+        AL, cache = forward(X, p, hidden_activation, output_activation,
+                            keep_prob=1.0, training=False)
+        # softmax needs the scores before the softmax, they are in the cache
+        ZL = cache["Z" + str(n_weight_matrices)]
+        return compute_loss(AL, Y, loss_name, parameters=p, l2=l2, ZL=ZL)
+
     numeric = np.zeros((n_params, 1))
 
     for i in range(n_params):
         theta_plus = np.copy(theta)
         theta_plus[i, 0] = theta_plus[i, 0] + epsilon
-        p_plus = vector_to_dictionary(theta_plus, keys, shapes)
-        AL_plus, _ = forward(X, p_plus, hidden_activation, output_activation,
-                             keep_prob=1.0, training=False)
-        loss_plus = compute_loss(AL_plus, Y, loss_name, parameters=p_plus, l2=l2)
 
         theta_minus = np.copy(theta)
         theta_minus[i, 0] = theta_minus[i, 0] - epsilon
-        p_minus = vector_to_dictionary(theta_minus, keys, shapes)
-        AL_minus, _ = forward(X, p_minus, hidden_activation, output_activation,
-                              keep_prob=1.0, training=False)
-        loss_minus = compute_loss(AL_minus, Y, loss_name, parameters=p_minus, l2=l2)
 
-        numeric[i, 0] = (loss_plus - loss_minus) / (2.0 * epsilon)
+        numeric[i, 0] = (loss_at(theta_plus) - loss_at(theta_minus)) / (2.0 * epsilon)
 
     top = np.linalg.norm(numeric - ours)
     bottom = np.linalg.norm(numeric) + np.linalg.norm(ours)

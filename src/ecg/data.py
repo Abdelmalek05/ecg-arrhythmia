@@ -42,6 +42,10 @@ def load_split(name: str, features: str = "waveform+rr", classes: str = "all",
         pass
     elif features == "waveform+rr":
         X = np.concatenate([X, rr], axis=1)
+    elif features == "rr":
+        # only the 4 timing numbers, no shape at all
+        # this tells us if the timing alone carries any signal
+        X = rr
     else:
         raise ValueError(f"unknown features {features!r}")
 

@@ -13,7 +13,7 @@ from .config import Config
 from .paths import RESULTS_CSV, ensure_dirs
 from .data import load_split, class_names, one_hot, balanced_class_weights, iterate_minibatches
 from .init import initialize_parameters
-from .model import forward, backward, predict
+from .model import forward, backward, predict, number_of_layers
 from .losses import compute_loss
 from .metrics import accuracy, macro_f1, per_class, majority_baseline
 
@@ -46,11 +46,13 @@ def evaluate(X, y_true, parameters, config, n_classes, class_weights):
         loss_name = "categorical_crossentropy"
         n_report = n_classes
 
-    AL = forward(X, parameters, config.hidden_activation, config.output_activation,
-                 keep_prob=1.0, training=False)[0]
+    AL, cache = forward(X, parameters, config.hidden_activation,
+                        config.output_activation, keep_prob=1.0, training=False)
     Y = prepare_labels(y_true, n_classes)
+    # categorical cross entropy wants the scores BEFORE softmax, they are in the cache
+    ZL = cache["Z" + str(number_of_layers(parameters))]
     loss = compute_loss(AL, Y, loss_name, class_weights=class_weights,
-                        parameters=parameters, l2=config.l2)
+                        parameters=parameters, l2=config.l2, ZL=ZL)
 
     y_pred = predict(X, parameters, config.hidden_activation, config.output_activation)
     y_flat = y_true.ravel()
@@ -121,8 +123,9 @@ def train(config, verbose=True, log=True):
             AL, cache = forward(Xb, parameters, config.hidden_activation,
                                 config.output_activation, keep_prob=config.keep_prob,
                                 training=True, seed=config.seed + epoch + n_batches)
+            ZLb = cache["Z" + str(len(layer_dims) - 1)]
             batch_loss = compute_loss(AL, Yb, loss_name, class_weights=weights,
-                                      parameters=parameters, l2=config.l2)
+                                      parameters=parameters, l2=config.l2, ZL=ZLb)
             grads = backward(AL, Yb, cache, parameters, config.hidden_activation,
                              config.output_activation, l2=config.l2,
                              keep_prob=config.keep_prob, class_weights=weights,
