@@ -18,9 +18,14 @@ from ecg.metrics import report, macro_f1, accuracy, confusion_matrix, per_class,
 from ecg import plots
 
 results = json.load(open("../results/phase5_test_results.json"))
-y_true = np.array(results["_best_true"])
-y_pred = np.array(results["_best_pred"])
-records = np.array(results["_best_rec"])
+
+# the predictions are kept in a small compressed file next to it, so the repo
+# does not carry a megabyte of integers in json
+saved = np.load("../results/phase5_test_predictions.npz", allow_pickle=False)
+y_true = saved["y_true"].astype(int)
+y_pred = saved["y_pred"].astype(int)
+records = saved["rec_names"][saved["rec_code"]]
+
 names = class_names("all")
 print("test beats:", y_true.size)
 """
