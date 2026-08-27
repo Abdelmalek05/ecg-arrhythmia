@@ -5,7 +5,9 @@
 
 Supersedes `ECG_Heartbeat_Project_Plan.md`, `ECG_Project_Plan_v2.md`, `ECG_Project_Plan_v3.md` — those can be deleted.
 
-**Status: Phases 0 and 1 complete. Phase 2 (C1 mechanics) is next.**
+**Status: Phases 0-5 complete. Phase 6 (PyTorch port) is next.**
+213 runs logged. **Test macro-F1 0.4193** (floor 0.2355), from the model chosen on dev.
+The test set has been read, once. No decision may be made from it.
 Repo: https://github.com/Abdelmalek05/ecg-arrhythmia
 
 ---
@@ -107,9 +109,10 @@ notebooks/
   03_shallow_nn.ipynb           Phase 2
   04_deep_nn_gradcheck.ipynb    Phase 2
   05_softmax_multiclass.ipynb   Phase 3
-  06_ablations.ipynb            Phase 4
-  07_error_analysis.ipynb       Phase 5
-  08_pytorch.ipynb              Phase 6
+  06_ablations.ipynb            Phase 4a
+  07_batchnorm.ipynb            Phase 4b
+  08_error_analysis.ipynb       Phase 5
+  09_pytorch.ipynb              Phase 6
 ```
 
 Two practical requirements:
@@ -183,7 +186,7 @@ Do this before writing model code, so every experiment is tracked from the first
 
 ---
 
-## Phase 2 — C1 mechanics: binary, N vs. V ← NEXT
+## Phase 2 — C1 mechanics: binary, N vs. V ✅ COMPLETE
 
 Filter to two classes. The goal is **working backprop**, not a good score.
 
@@ -199,7 +202,7 @@ Filter to two classes. The goal is **working backprop**, not a good score.
 
 ---
 
-## Phase 3 — Multi-class: softmax over 4 classes
+## Phase 3 — Multi-class: softmax over 4 classes ✅ COMPLETE
 
 Reuse the Phase 2 network. Swap exactly three things:
 - sigmoid(1) → **softmax(4)**
@@ -216,7 +219,7 @@ Run twice: **waveform only (250 inputs)** and **waveform + R-R (254 inputs)**.
 
 ---
 
-## Phase 4 — C2 ablation lab
+## Phase 4 — C2 ablation lab ✅ COMPLETE (split into 4a + 4b)
 
 No new models. The Phase 3 network is the testbed; one variable at a time, 3 seeds each, every run logged.
 
@@ -240,7 +243,37 @@ No new models. The Phase 3 network is the testbed; one variable at a time, 3 see
 
 ---
 
-## Phase 5 — C3 strategy memo
+## What Phases 3-4 established (read before Phase 5)
+
+1. **The input representation is the binding constraint.** 4 timing features reach
+   dev macro-F1 0.5608; the same network on 254 features reaches 0.4414 and on 250
+   waveform samples 0.4004. Adding the waveform to the timing features *hurts*.
+2. **No C2 technique moved the result more than ~0.05.** Initialisation, L2, dropout,
+   batch size, four optimisers, LR decay, batch norm, class weights — all small.
+   Changing the input moved it 0.24.
+3. **Normalisation must precede mixing.** Input scaling raised S-F1 from 0.017 to
+   0.133; batch norm (which acts after W*A+b) reached only 0.023. Adam failed for the
+   same reason: both act downstream of the mixing.
+4. **Class F is unlearnable here.** F1 = 0.000 in the best model, across 189 runs.
+   382 training beats, 372 from one patient.
+5. **Two settings genuinely break the model:** zeros init (exactly the floor) and
+   full-batch descent (30 updates total).
+
+## What Phase 5 established
+
+6. **Dev-based model selection failed.** The model chosen on dev (timing only,
+   test 0.4193) is the *worst* of three on test; the 254-feature model reaches 0.4794.
+   The choice was kept, because switching after seeing test would destroy the estimate.
+7. **The cause is patients per class, not beats per class.** Dev's 218 S beats came
+   from effectively two patients, whose S beats arrive nearly on time (ratio 0.992).
+   Test's dominant S patient sits at 0.738, indistinguishable from V's 0.726.
+   S-vs-V separability by timing: AUC 0.668 on dev, **0.514 on test**.
+8. **We tuned the wrong model.** Timing-only is high bias (train 0.5634, dev 0.5572 —
+   gap 0.006); the 254-feature model is high variance (gap 0.571). Phase 4's 174 runs
+   of regularisation and optimisation were applied to the high-bias one, where they
+   cannot help. **Fix the dev split before any further tuning.**
+
+## Phase 5 — C3 strategy memo ✅ COMPLETE
 
 Mostly analysis, no new models.
 
@@ -255,7 +288,7 @@ Mostly analysis, no new models.
 
 ---
 
-## Phase 6 — PyTorch port
+## Phase 6 — PyTorch port ← NEXT
 
 1. **Agreement test first.** Same init, same data order, same LR and batch size — NumPy vs. PyTorch loss over the first 10 steps must match to ~1e-5. A far stronger check on the from-scratch code than comparing final accuracy.
 2. Then train properly with `nn.Module` / `nn.CrossEntropyLoss` / `torch.optim.Adam`; compare wall-clock and macro-F1.
@@ -288,11 +321,12 @@ Priority if revisited:
 |---|---|---|---|---|
 | 0 | Build the dataset | — | ½ day | ✅ done |
 | 1 | Repository setup | — | 1 hour | ✅ done |
-| 2 | C1 mechanics, N vs. V | C1W2–W4 | 2–3 days | ← next |
-| 3 | 4-class softmax | C2W3 | 1 day | |
-| 4 | C2 ablation lab | C2W1–W3 | 2–3 days | |
-| 5 | C3 strategy memo | C3W1–W2 | 2 days | |
-| 6 | PyTorch port | — | 1 day | |
+| 2 | C1 mechanics, N vs. V | C1W2–W4 | 2–3 days | ✅ done |
+| 3 | 4-class softmax | C2W3 | 1 day | ✅ done |
+| 4a | C2 ablation lab | C2W1–W2 | 2–3 days | ✅ done |
+| 4b | Batch norm | C2W3 | 1 hour | ✅ done |
+| 5 | C3 strategy memo | C3W1–W2 | 2 days | ✅ done |
+| 6 | PyTorch port | — | 1 day | ← next |
 | 7 | More data | — | optional | deferred |
 
 ---
