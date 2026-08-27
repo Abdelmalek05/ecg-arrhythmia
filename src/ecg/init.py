@@ -20,7 +20,31 @@ def scale_for(method, n_prev, n_curr):
     raise ValueError("unknown init " + str(method))
 
 
-def initialize_parameters(layer_dims, method="he", seed=None):
+def number_of_layers(parameters):
+    # parameters holds W1, b1, W2, b2, ... so we count the W keys
+    count = 0
+    for key in parameters:
+        if key.startswith("W"):
+            count = count + 1
+    return count
+
+
+def parameter_keys(parameters):
+    """Every learnable key, in one fixed order: W1, b1, gamma1, beta1, W2, ...
+
+    Every module that walks the parameters must use this, so that adding a new
+    kind of parameter (like batch norm's gamma and beta) only changes one place.
+    """
+    keys = []
+    for l in range(1, number_of_layers(parameters) + 1):
+        for letter in ["W", "b", "gamma", "beta"]:
+            key = letter + str(l)
+            if key in parameters:
+                keys.append(key)
+    return keys
+
+
+def initialize_parameters(layer_dims, method="he", seed=None, batch_norm=False):
     """Make the W and b for every layer.
 
     layer_dims: list of layer sizes, for example [254, 64, 32, 1]
@@ -43,6 +67,13 @@ def initialize_parameters(layer_dims, method="he", seed=None):
         scale = scale_for(method, n_prev, n_curr)
         parameters["W" + str(l)] = rng.standard_normal((n_curr, n_prev)) * scale
         parameters["b" + str(l)] = np.zeros((n_curr, 1))
+
+        # batch norm learns a scale and a shift for every hidden layer.
+        # gamma starts at 1 and beta at 0, so at the start batch norm only
+        # normalises and does not change anything else.
+        if batch_norm and l < n_layers:
+            parameters["gamma" + str(l)] = np.ones((n_curr, 1))
+            parameters["beta" + str(l)] = np.zeros((n_curr, 1))
 
     return parameters
 

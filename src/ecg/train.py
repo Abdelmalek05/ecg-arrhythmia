@@ -14,7 +14,8 @@ from .paths import RESULTS_CSV, ensure_dirs
 from .data import (load_split, class_names, one_hot, balanced_class_weights,
                    iterate_minibatches, fit_standardizer, apply_standardizer)
 from .init import initialize_parameters
-from .model import forward, backward, predict, number_of_layers
+from .model import forward, backward, predict, new_bn_state
+from .init import number_of_layers
 from .losses import compute_loss
 from .metrics import accuracy, macro_f1, per_class, majority_baseline
 from .optimizers import init_optimizer_state, update_parameters, learning_rate_at
@@ -39,7 +40,7 @@ def prepare_labels(y, n_classes):
     return one_hot(y.ravel(), n_classes).T.astype(np.float64)
 
 
-def evaluate(X, y_true, parameters, config, n_classes, class_weights):
+def evaluate(X, y_true, parameters, config, n_classes, class_weights, bn_state=None):
     """Loss and metrics on one split."""
     if n_classes == 1:
         loss_name = "binary_crossentropy"
@@ -49,14 +50,17 @@ def evaluate(X, y_true, parameters, config, n_classes, class_weights):
         n_report = n_classes
 
     AL, cache = forward(X, parameters, config.hidden_activation,
-                        config.output_activation, keep_prob=1.0, training=False)
+                        config.output_activation, keep_prob=1.0,
+                        batch_norm=config.batch_norm, training=False,
+                        bn_state=bn_state)
     Y = prepare_labels(y_true, n_classes)
     # categorical cross entropy wants the scores BEFORE softmax, they are in the cache
     ZL = cache["Z" + str(number_of_layers(parameters))]
     loss = compute_loss(AL, Y, loss_name, class_weights=class_weights,
                         parameters=parameters, l2=config.l2, ZL=ZL)
 
-    y_pred = predict(X, parameters, config.hidden_activation, config.output_activation)
+    y_pred = predict(X, parameters, config.hidden_activation, config.output_activation,
+                     batch_norm=config.batch_norm, bn_state=bn_state)
     y_flat = y_true.ravel()
     return {
         "loss": loss,
@@ -72,9 +76,6 @@ def train(config, verbose=True, log=True):
 
     We never touch the test split here. Test is read once, in Phase 5.
     """
-    if config.batch_norm:
-        raise NotImplementedError("batch norm comes in Phase 4b")
-
     start = time.time()
     np.random.seed(config.seed)
 
@@ -105,7 +106,9 @@ def train(config, verbose=True, log=True):
     # 2. parameters
     n_x = Xtr.shape[0]
     layer_dims = config.layer_dims(n_x, n_classes)
-    parameters = initialize_parameters(layer_dims, config.init, config.seed)
+    parameters = initialize_parameters(layer_dims, config.init, config.seed,
+                                       batch_norm=config.batch_norm)
+    bn_state = new_bn_state(parameters) if config.batch_norm else None
 
     if n_classes == 1:
         loss_name = "binary_crossentropy"
@@ -129,14 +132,15 @@ def train(config, verbose=True, log=True):
                                           seed=config.seed + epoch, columns=True):
             AL, cache = forward(Xb, parameters, config.hidden_activation,
                                 config.output_activation, keep_prob=config.keep_prob,
-                                training=True, seed=config.seed + epoch + n_batches)
+                                batch_norm=config.batch_norm, training=True,
+                                seed=config.seed + epoch + n_batches, bn_state=bn_state)
             ZLb = cache["Z" + str(len(layer_dims) - 1)]
             batch_loss = compute_loss(AL, Yb, loss_name, class_weights=weights,
                                       parameters=parameters, l2=config.l2, ZL=ZLb)
             grads = backward(AL, Yb, cache, parameters, config.hidden_activation,
                              config.output_activation, l2=config.l2,
-                             keep_prob=config.keep_prob, class_weights=weights,
-                             loss_name=loss_name)
+                             keep_prob=config.keep_prob, batch_norm=config.batch_norm,
+                             class_weights=weights, loss_name=loss_name)
 
             parameters, opt_state = update_parameters(
                 parameters, grads, opt_state, config.optimizer, lr_now)
@@ -144,8 +148,8 @@ def train(config, verbose=True, log=True):
             epoch_loss = epoch_loss + batch_loss
             n_batches = n_batches + 1
 
-        tr = evaluate(Xtr, ytr, parameters, config, n_classes, weights)
-        dv = evaluate(Xdv, ydv, parameters, config, n_classes, weights)
+        tr = evaluate(Xtr, ytr, parameters, config, n_classes, weights, bn_state)
+        dv = evaluate(Xdv, ydv, parameters, config, n_classes, weights, bn_state)
         history["train_loss"].append(tr["loss"])
         history["train_macro_f1"].append(tr["macro_f1"])
         history["dev_loss"].append(dv["loss"])

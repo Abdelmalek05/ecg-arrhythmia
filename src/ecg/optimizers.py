@@ -4,25 +4,12 @@
 
 import numpy as np
 
+from .init import parameter_keys
+
 NAMES = ("gd", "momentum", "rmsprop", "adam")
 SCHEDULES = ("none", "inverse", "exponential")
 
 DEFAULTS = {"beta1": 0.9, "beta2": 0.999, "epsilon": 1e-8}
-
-
-def parameter_keys(parameters):
-    # W1, b1, W2, b2, ... in a fixed order
-    n_layers = 0
-    for key in parameters:
-        if key.startswith("W"):
-            n_layers = n_layers + 1
-    keys = []
-    for l in range(1, n_layers + 1):
-        for letter in ["W", "b"]:
-            key = letter + str(l)
-            if key in parameters:      # normally both exist, but do not assume it
-                keys.append(key)
-    return keys
 
 
 def init_optimizer_state(parameters, name):

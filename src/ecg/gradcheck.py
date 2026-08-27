@@ -5,6 +5,7 @@
 
 import numpy as np
 
+from .init import parameter_keys, number_of_layers
 from .model import forward, backward
 from .losses import compute_loss
 
@@ -17,21 +18,12 @@ def dictionary_to_vector(parameters):
     We also return the keys and shapes, so we can put everything back later.
     The order is always the same: W1, b1, W2, b2, ...
     """
-    keys = []
+    keys = parameter_keys(parameters)
     shapes = []
     pieces = []
-
-    n_layers = 0
-    for key in parameters:
-        if key.startswith("W"):
-            n_layers = n_layers + 1
-
-    for l in range(1, n_layers + 1):
-        for letter in ["W", "b"]:
-            key = letter + str(l)
-            keys.append(key)
-            shapes.append(parameters[key].shape)
-            pieces.append(parameters[key].reshape(-1, 1))
+    for key in keys:
+        shapes.append(parameters[key].shape)
+        pieces.append(parameters[key].reshape(-1, 1))
 
     theta = np.concatenate(pieces, axis=0)
     return theta, keys, shapes
@@ -57,7 +49,8 @@ def gradients_to_vector(grads, keys, shapes):
 
 
 def gradient_check(parameters, grads, X, Y, hidden_activation="tanh",
-                   output_activation="sigmoid", l2=0.0, epsilon=1e-7, verbose=True):
+                   output_activation="sigmoid", l2=0.0, epsilon=1e-7, verbose=True,
+                   batch_norm=False):
     """Compare our gradients with numerical ones. Small answer means we are correct.
 
     relative error = ||numeric - ours|| / (||numeric|| + ||ours||)
@@ -68,6 +61,9 @@ def gradient_check(parameters, grads, X, Y, hidden_activation="tanh",
     Careful:
       - turn dropout off (keep_prob = 1.0), it makes the loss random
       - use tanh, not relu: relu has a corner at 0 and gives false alarms
+      - with batch norm we must stay in TRAINING mode, because that is the
+        function we differentiated. in prediction mode batch norm uses the
+        running average instead, which is a different function.
     """
     theta, keys, shapes = dictionary_to_vector(parameters)
     ours = gradients_to_vector(grads, keys, shapes)
@@ -78,16 +74,15 @@ def gradient_check(parameters, grads, X, Y, hidden_activation="tanh",
     else:
         loss_name = "binary_crossentropy"
 
-    n_weight_matrices = 0
-    for key in parameters:
-        if key.startswith("W"):
-            n_weight_matrices = n_weight_matrices + 1
+    n_weight_matrices = number_of_layers(parameters)
 
     def loss_at(theta_vector):
         # rebuild the parameters, run forward, return the loss
         p = vector_to_dictionary(theta_vector, keys, shapes)
         AL, cache = forward(X, p, hidden_activation, output_activation,
-                            keep_prob=1.0, training=False)
+                            keep_prob=1.0, batch_norm=batch_norm,
+                            training=True if batch_norm else False,
+                            bn_state=None)
         # softmax needs the scores before the softmax, they are in the cache
         ZL = cache["Z" + str(n_weight_matrices)]
         return compute_loss(AL, Y, loss_name, parameters=p, l2=l2, ZL=ZL)
