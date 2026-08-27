@@ -1,14 +1,29 @@
-# ECG Arrhythmia Classification — Project Plan
+# How this project was built
 
 *C1–C3 rehearsal project — Andrew Ng Deep Learning Specialization*
-*Goal: implement what I learned in Courses 1–3 on data that won't lie to me.*
 
-Supersedes `ECG_Heartbeat_Project_Plan.md`, `ECG_Project_Plan_v2.md`, `ECG_Project_Plan_v3.md` — those can be deleted.
+This is the working plan the project was built to. It is kept as a record of how the
+work was staged and, more importantly, **what each step had to prove before the next
+one was allowed to start.** The results themselves are in [README.md](README.md) and in
+the notebooks.
 
-**Status: Phases 0-6 complete. Only Phase 7 (more data) remains, deferred.**
-213 runs logged. **Test macro-F1 0.4193** (floor 0.2355), from the model chosen on dev.
-The test set has been read, once. No decision may be made from it.
-Repo: https://github.com/Abdelmalek05/ecg-arrhythmia
+**Status: complete.** 216 runs logged. Final held-out result: **test macro-F1 0.4193**
+against a floor of 0.2355. The test set was read once, in Phase 5, and no decision was
+made after reading it.
+
+## The idea behind the staging
+
+Every phase ends on a **gate** — a number that has to match something known, not a
+feeling that the step is done. A few examples of what that caught:
+
+- the AAMI class mapping had to reproduce the published beat counts exactly (109,494)
+- the from-scratch logistic regression had to match scikit-learn within 1%
+- the L-layer network had to reproduce the standalone logistic regression **bit for bit**
+- gradient checking had to stay under 1e-7 *and* had to fail on a deliberate 1% bug
+- the mean beat waveforms had to look like plausible heartbeats before any model ran
+
+The gates are the reason the leakage problem, the feature-scale problem and the
+dev-selection failure were found rather than shipped.
 
 ---
 
