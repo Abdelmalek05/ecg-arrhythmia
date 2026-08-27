@@ -14,8 +14,9 @@ SEEDS = (1, 2, 3)
 @dataclass
 class Config:
     # --- data -------------------------------------------------------- axis 9
-    features: str = "waveform+rr"       # "waveform" (250) | "waveform+rr" (254)
+    features: str = "waveform+rr"       # "waveform" (250) | "waveform+rr" (254) | "rr" (4)
     classes: str = "all"                # "all" (N/S/V/F) | "NV" (binary, Phase 2)
+    standardize: bool = False           # axis 10: make every feature mean 0, std 1
 
     # --- architecture -------------------------------------------------------
     hidden_dims: tuple[int, ...] = (64, 32)

@@ -11,15 +11,17 @@ import pandas as pd
 
 from .config import Config
 from .paths import RESULTS_CSV, ensure_dirs
-from .data import load_split, class_names, one_hot, balanced_class_weights, iterate_minibatches
+from .data import (load_split, class_names, one_hot, balanced_class_weights,
+                   iterate_minibatches, fit_standardizer, apply_standardizer)
 from .init import initialize_parameters
 from .model import forward, backward, predict, number_of_layers
 from .losses import compute_loss
 from .metrics import accuracy, macro_f1, per_class, majority_baseline
+from .optimizers import init_optimizer_state, update_parameters, learning_rate_at
 
 RESULT_FIELDS = [
     "run_id", "timestamp", "phase", "note",
-    "features", "classes", "hidden_dims", "hidden_activation", "output_activation",
+    "features", "classes", "standardize", "hidden_dims", "hidden_activation", "output_activation",
     "init", "l2", "keep_prob", "batch_norm",
     "optimizer", "learning_rate", "lr_decay", "decay_rate", "batch_size", "epochs",
     "class_weights", "seed",
@@ -70,14 +72,8 @@ def train(config, verbose=True, log=True):
 
     We never touch the test split here. Test is read once, in Phase 5.
     """
-    if config.optimizer != "gd":
-        raise NotImplementedError(
-            "only plain gradient descent works in Phase 2, "
-            "momentum/rmsprop/adam come in Phase 4")
-    if config.lr_decay != "none":
-        raise NotImplementedError("learning rate decay comes in Phase 4")
     if config.batch_norm:
-        raise NotImplementedError("batch norm comes in Phase 4")
+        raise NotImplementedError("batch norm comes in Phase 4b")
 
     start = time.time()
     np.random.seed(config.seed)
@@ -85,6 +81,11 @@ def train(config, verbose=True, log=True):
     # 1. data
     Xtr, ytr, _ = load_split("train", config.features, config.classes, columns=True)
     Xdv, ydv, _ = load_split("dev", config.features, config.classes, columns=True)
+
+    if config.standardize:
+        mu, sd = fit_standardizer(Xtr, columns=True)
+        Xtr = apply_standardizer(Xtr, mu, sd)
+        Xdv = apply_standardizer(Xdv, mu, sd)   # train statistics, not dev's own
 
     names = class_names(config.classes)
     if config.output_activation == "sigmoid":
@@ -111,12 +112,18 @@ def train(config, verbose=True, log=True):
     else:
         loss_name = "categorical_crossentropy"
 
-    history = {"train_loss": [], "train_macro_f1": [], "dev_loss": [], "dev_macro_f1": []}
+    opt_state = init_optimizer_state(parameters, config.optimizer)
+
+    history = {"train_loss": [], "train_macro_f1": [], "dev_loss": [],
+               "dev_macro_f1": [], "learning_rate": []}
 
     # 3. the training loop
     for epoch in range(config.epochs):
         epoch_loss = 0.0
         n_batches = 0
+        lr_now = learning_rate_at(config.learning_rate, epoch,
+                                  config.lr_decay, config.decay_rate)
+        history["learning_rate"].append(lr_now)
 
         for Xb, Yb in iterate_minibatches(Xtr, Ytr, config.batch_size,
                                           seed=config.seed + epoch, columns=True):
@@ -131,10 +138,8 @@ def train(config, verbose=True, log=True):
                              keep_prob=config.keep_prob, class_weights=weights,
                              loss_name=loss_name)
 
-            # plain gradient descent, one step
-            for l in range(1, len(layer_dims)):
-                parameters["W" + str(l)] -= config.learning_rate * grads["dW" + str(l)]
-                parameters["b" + str(l)] -= config.learning_rate * grads["db" + str(l)]
+            parameters, opt_state = update_parameters(
+                parameters, grads, opt_state, config.optimizer, lr_now)
 
             epoch_loss = epoch_loss + batch_loss
             n_batches = n_batches + 1
@@ -195,6 +200,8 @@ def log_result(config, metrics, wall_clock, run_id=None):
     for field in RESULT_FIELDS:
         clean[field] = row.get(field, "")
 
+    _migrate_if_header_changed()
+
     write_header = not RESULTS_CSV.exists()
     f = open(RESULTS_CSV, "a", newline="", encoding="utf-8")
     writer = csv.DictWriter(f, fieldnames=RESULT_FIELDS)
@@ -203,6 +210,40 @@ def log_result(config, metrics, wall_clock, run_id=None):
     writer.writerow(clean)
     f.close()
     return run_id
+
+
+def _migrate_if_header_changed():
+    """If we added a column since the file was made, rewrite the old rows.
+
+    Without this the file gets rows of two different widths and pandas cannot
+    read it at all. That happened once already, in Phase 4a.
+    """
+    if not RESULTS_CSV.exists():
+        return
+    reader = csv.reader(open(RESULTS_CSV, newline="", encoding="utf-8"))
+    rows = list(reader)
+    if not rows:
+        return
+    header = rows[0]
+    if header == RESULT_FIELDS:
+        return
+
+    fixed = []
+    for r in rows[1:]:
+        if len(r) == len(header):
+            d = dict(zip(header, r))
+        elif len(r) == len(RESULT_FIELDS):
+            d = dict(zip(RESULT_FIELDS, r))
+        else:
+            continue
+        fixed.append({field: d.get(field, "") for field in RESULT_FIELDS})
+
+    f = open(RESULTS_CSV, "w", newline="", encoding="utf-8")
+    writer = csv.DictWriter(f, fieldnames=RESULT_FIELDS)
+    writer.writeheader()
+    writer.writerows(fixed)
+    f.close()
+    print("results.csv: header changed, rewrote " + str(len(fixed)) + " old rows")
 
 
 def load_results():

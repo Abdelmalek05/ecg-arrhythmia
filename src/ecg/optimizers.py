@@ -1,41 +1,107 @@
-# this file will hold the update rules: gd, momentum, rmsprop, adam
-# it is phase 4 work, so for now only the names are here
-
-from __future__ import annotations
+# this file holds the update rules: gd, momentum, rmsprop, adam
+# they all answer the same question: we have the gradient, how do we change the weights
+# the state dict keeps the memory that momentum and rmsprop need between steps
 
 import numpy as np
 
 NAMES = ("gd", "momentum", "rmsprop", "adam")
+SCHEDULES = ("none", "inverse", "exponential")
 
 DEFAULTS = {"beta1": 0.9, "beta2": 0.999, "epsilon": 1e-8}
 
 
-def init_optimizer_state(parameters: dict, name: str) -> dict:
-    """Zero-initialised moment buffers matching `parameters`, plus a step counter.
+def parameter_keys(parameters):
+    # W1, b1, W2, b2, ... in a fixed order
+    n_layers = 0
+    for key in parameters:
+        if key.startswith("W"):
+            n_layers = n_layers + 1
+    keys = []
+    for l in range(1, n_layers + 1):
+        for letter in ["W", "b"]:
+            key = letter + str(l)
+            if key in parameters:      # normally both exist, but do not assume it
+                keys.append(key)
+    return keys
 
-    Returns {} for "gd"; {"v": {...}, "t": 0} for momentum; {"s": {...}} for rmsprop;
-    {"v": {...}, "s": {...}, "t": 0} for adam.
+
+def init_optimizer_state(parameters, name):
+    """Make the empty memory the optimizer needs.
+
+    gd needs nothing.
+    momentum keeps v, a running average of the gradient.
+    rmsprop keeps s, a running average of the gradient squared.
+    adam keeps both, and t, the number of steps done so far.
     """
     if name not in NAMES:
-        raise ValueError(f"unknown optimizer {name!r}, expected one of {NAMES}")
-    raise NotImplementedError("Phase 4")
+        raise ValueError("unknown optimizer " + str(name) + ", expected one of " + str(NAMES))
+
+    state = {"t": 0}
+    if name in ("momentum", "adam"):
+        v = {}
+        for key in parameter_keys(parameters):
+            v[key] = np.zeros_like(parameters[key])
+        state["v"] = v
+    if name in ("rmsprop", "adam"):
+        s = {}
+        for key in parameter_keys(parameters):
+            s[key] = np.zeros_like(parameters[key])
+        state["s"] = s
+    return state
 
 
-def update_parameters(parameters: dict, grads: dict, state: dict, name: str,
-                      learning_rate: float, **hp) -> tuple[dict, dict]:
-    """Apply one update. Returns (parameters, state), both updated in place.
+def update_parameters(parameters, grads, state, name, learning_rate, **hp):
+    """Do one update of every W and b. Returns (parameters, state)."""
+    beta1 = hp.get("beta1", DEFAULTS["beta1"])
+    beta2 = hp.get("beta2", DEFAULTS["beta2"])
+    epsilon = hp.get("epsilon", DEFAULTS["epsilon"])
 
-    hp overrides DEFAULTS (beta1, beta2, epsilon).
+    state["t"] = state["t"] + 1
+    t = state["t"]
+
+    for key in parameter_keys(parameters):
+        g = grads["d" + key]
+
+        if name == "gd":
+            step = g
+
+        elif name == "momentum":
+            # keep going in the direction we were already going
+            state["v"][key] = beta1 * state["v"][key] + (1.0 - beta1) * g
+            step = state["v"][key]
+
+        elif name == "rmsprop":
+            # divide by how big this weight's gradient usually is
+            # so a weight with small gradients still gets a real step
+            state["s"][key] = beta2 * state["s"][key] + (1.0 - beta2) * (g * g)
+            step = g / (np.sqrt(state["s"][key]) + epsilon)
+
+        elif name == "adam":
+            # momentum and rmsprop together
+            state["v"][key] = beta1 * state["v"][key] + (1.0 - beta1) * g
+            state["s"][key] = beta2 * state["s"][key] + (1.0 - beta2) * (g * g)
+            # at the start v and s are near zero, so we grow them back up
+            v_fixed = state["v"][key] / (1.0 - beta1 ** t)
+            s_fixed = state["s"][key] / (1.0 - beta2 ** t)
+            step = v_fixed / (np.sqrt(s_fixed) + epsilon)
+
+        else:
+            raise ValueError("unknown optimizer " + str(name))
+
+        parameters[key] = parameters[key] - learning_rate * step
+
+    return parameters, state
+
+
+def learning_rate_at(initial_lr, epoch, schedule="none", decay_rate=0.01):
+    """How big the steps should be at this epoch.
+
+    Big steps at the start to move fast, small steps later to settle down.
     """
-    raise NotImplementedError("Phase 4")
-
-
-def learning_rate_at(initial_lr: float, epoch: int, schedule: str = "none",
-                     decay_rate: float = 0.01) -> float:
-    """Phase 4 axis 6.
-
-        none         initial_lr
-        inverse      initial_lr / (1 + decay_rate * epoch)
-        exponential  initial_lr * (1 - decay_rate) ** epoch
-    """
-    raise NotImplementedError("Phase 4")
+    if schedule == "none":
+        return initial_lr
+    if schedule == "inverse":
+        return initial_lr / (1.0 + decay_rate * epoch)
+    if schedule == "exponential":
+        return initial_lr * ((1.0 - decay_rate) ** epoch)
+    raise ValueError("unknown schedule " + str(schedule) + ", expected one of " + str(SCHEDULES))

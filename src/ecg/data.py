@@ -100,3 +100,21 @@ def iterate_minibatches(X, Y, batch_size: int, seed: int, columns: bool = False)
             yield X[:, idx], Y[:, idx]
         else:
             yield X[idx], Y[idx]
+
+
+def fit_standardizer(X, columns=True):
+    """Learn the mean and the std of every feature, from the TRAIN split only.
+
+    In Phase 3 we found that the 250 waveform numbers carry about 1000 times more
+    variance than the 4 timing numbers, so the model almost cannot hear the timing.
+    Making every feature the same size is one way to fix that.
+    """
+    axis = 1 if columns else 0
+    mu = X.mean(axis=axis, keepdims=True)
+    sd = X.std(axis=axis, keepdims=True) + 1e-8
+    return mu, sd
+
+
+def apply_standardizer(X, mu, sd):
+    # dev and test must use the numbers learned on train, never their own
+    return (X - mu) / sd
