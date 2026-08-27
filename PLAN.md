@@ -5,7 +5,7 @@
 
 Supersedes `ECG_Heartbeat_Project_Plan.md`, `ECG_Project_Plan_v2.md`, `ECG_Project_Plan_v3.md` — those can be deleted.
 
-**Status: Phases 0-5 complete. Phase 6 (PyTorch port) is next.**
+**Status: Phases 0-6 complete. Only Phase 7 (more data) remains, deferred.**
 213 runs logged. **Test macro-F1 0.4193** (floor 0.2355), from the model chosen on dev.
 The test set has been read, once. No decision may be made from it.
 Repo: https://github.com/Abdelmalek05/ecg-arrhythmia
@@ -273,6 +273,19 @@ No new models. The Phase 3 network is the testbed; one variable at a time, 3 see
    of regularisation and optimisation were applied to the high-bias one, where they
    cannot help. **Fix the dev split before any further tuning.**
 
+## What Phase 6 established
+
+9. **The from-scratch NumPy code is correct.** It agrees with PyTorch to **4e-17** —
+   float64 rounding error — on loss, gradients and weights across 10 descent steps.
+   Stronger than gradient checking, which cannot catch forward and backward being
+   wrong together.
+10. **PyTorch is not faster at this scale.** 20.9s NumPy vs 21.2s torch float64
+    (1.02x slower); 18.8s at float32. No GPU, and framework overhead dominates for a
+    254-16-4 network.
+11. **A CNN reads shape, but cannot be judged on class S here.** V-F1 rose 0.428 ->
+    0.520 (the convolution works), S-F1 only 0.088 -> 0.112. And S cannot be measured
+    on our dev set at all, per finding 7. **Inconclusive, and blocked by the dev split.**
+
 ## Phase 5 — C3 strategy memo ✅ COMPLETE
 
 Mostly analysis, no new models.
@@ -288,7 +301,7 @@ Mostly analysis, no new models.
 
 ---
 
-## Phase 6 — PyTorch port ← NEXT
+## Phase 6 — PyTorch port ✅ COMPLETE
 
 1. **Agreement test first.** Same init, same data order, same LR and batch size — NumPy vs. PyTorch loss over the first 10 steps must match to ~1e-5. A far stronger check on the from-scratch code than comparing final accuracy.
 2. Then train properly with `nn.Module` / `nn.CrossEntropyLoss` / `torch.optim.Adam`; compare wall-clock and macro-F1.
@@ -326,7 +339,7 @@ Priority if revisited:
 | 4a | C2 ablation lab | C2W1–W2 | 2–3 days | ✅ done |
 | 4b | Batch norm | C2W3 | 1 hour | ✅ done |
 | 5 | C3 strategy memo | C3W1–W2 | 2 days | ✅ done |
-| 6 | PyTorch port | — | 1 day | ← next |
+| 6 | PyTorch port + CNN | — | 1 day | ✅ done |
 | 7 | More data | — | optional | deferred |
 
 ---
