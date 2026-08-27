@@ -197,7 +197,7 @@ Filter to two classes. The goal is **working backprop**, not a good score.
 4. **Gradient check — immediately**, the moment the L-layer backward pass exists, on a tiny net and a handful of examples. *Before* training anything or reading any curve.
 
 **Ties to:** C1W2 → C1W4.
-**Deliverable:** `reports/phase2.md` — loss curves for all three, table of accuracy / precision / recall / F1 against the trivial baseline.
+**Deliverable:** the phase notebook — loss curves for all three, table of accuracy / precision / recall / F1 against the trivial baseline.
 **Done when:** gradient check < 1e-7 relative error and scratch LR matches sklearn.
 
 ---
@@ -214,7 +214,7 @@ Reuse the Phase 2 network. Swap exactly three things:
 Run twice: **waveform only (250 inputs)** and **waveform + R-R (254 inputs)**.
 
 **Ties to:** C2W3 (softmax).
-**Deliverable:** `reports/phase3.md` — 4×4 confusion matrix, per-class P/R/F1, macro-F1, against the ~89% baseline, for both feature sets.
+**Deliverable:** the phase notebook — 4×4 confusion matrix, per-class P/R/F1, macro-F1, against the ~89% baseline, for both feature sets.
 **Done when:** you can state in one sentence what the R-R features did to class S recall.
 
 ---
@@ -239,7 +239,7 @@ No new models. The Phase 3 network is the testbed; one variable at a time, 3 see
 
 **If dev results bounce across seeds**, switch to **patient-wise cross-validation over the 22 DS1 patients** instead of the fixed 17/5 split. That buys more effective training *and* validation patients at k× compute — minutes on this data.
 
-**Deliverable:** `reports/phase4.md` — one section per axis: plot, numbers, 2–3 sentences on *why*. "No effect" is a valid finding if the mechanism is explained.
+**Deliverable:** the phase notebook — one section per axis: plot, numbers, 2–3 sentences on *why*. "No effect" is a valid finding if the mechanism is explained.
 
 ---
 
@@ -297,7 +297,7 @@ Mostly analysis, no new models.
 5. **Limitations.** Single lead, one database, 44 patients, F concentrated in one person per split, dev-F unreliable at 32 beats.
 
 **Ties to:** C3W1–W2.
-**Deliverable:** `reports/strategy_memo.md` — prose, not code.
+**Deliverable:** the phase notebook — prose, not code.
 
 ---
 

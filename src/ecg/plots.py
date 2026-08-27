@@ -6,7 +6,7 @@ from __future__ import annotations
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .paths import FIGURES, ensure_dirs
+from .paths import FIGURES, ROOT, ensure_dirs
 
 CLASS_COLOURS = {"N": "#2c6fbb", "S": "#e07b39", "V": "#c0392b", "F": "#7d3c98"}
 FS = 360
@@ -18,11 +18,17 @@ def beat_time_axis(n: int = 250) -> np.ndarray:
     return (np.arange(n) - PRE) / FS * 1000.0
 
 
-def save(fig, name: str, dpi: int = 130):
+def save(fig, name, dpi=130):
+    # we print the path relative to the project, not the full path on this
+    # machine, so notebook outputs do not contain anyone's home folder
     ensure_dirs()
-    path = FIGURES / (name if name.endswith(".png") else f"{name}.png")
+    path = FIGURES / (name if name.endswith(".png") else name + ".png")
     fig.savefig(path, dpi=dpi, bbox_inches="tight")
-    print(f"saved {path}")
+    try:
+        shown = path.relative_to(ROOT)
+    except ValueError:
+        shown = path.name
+    print("saved " + str(shown).replace("\\", "/"))
     return path
 
 

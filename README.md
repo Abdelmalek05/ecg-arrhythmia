@@ -59,7 +59,8 @@ Two consequences worth stating up front:
   inherent to the benchmark rather than manufactured.
 
 Full documentation, including per-patient class distributions and the verification
-plots, is in [`reports/data_card.md`](reports/data_card.md).
+plots, is in [`reports/data_card.md`](reports/data_card.md). The analysis for each
+stage lives in the notebooks.
 
 ---
 
@@ -99,7 +100,7 @@ src/ecg/            algorithms — every variant is an argument, not a copy-past
   plots.py            shared figures
 
 notebooks/          experiments — configure, call, plot, interpret
-reports/            written findings
+reports/            data card
 results/            results.csv and figures
 ```
 
@@ -132,3 +133,42 @@ Phased, with each phase gated on a verifiable result. See [`PLAN.md`](PLAN.md).
 | 7 | Additional PhysioNet databases (optional) | deferred |
 
 The test split is read once, in Phase 5. Every decision before that is made on dev.
+
+---
+
+## Data and citation
+
+No data is stored in this repository. `python -m ecg.build_dataset` downloads the
+records directly from PhysioNet at build time.
+
+The data is the **MIT-BIH Arrhythmia Database**. PhysioNet asks that both of the
+following be cited by anyone using it:
+
+> Moody GB, Mark RG. *The impact of the MIT-BIH Arrhythmia Database.*
+> IEEE Eng in Med and Biol 20(3):45-50 (May-June 2001). PMID: 11446209.
+
+> Goldberger AL, Amaral LAN, Glass L, Hausdorff JM, Ivanov PCh, Mark RG,
+> Mietus JE, Moody GB, Peng C-K, Stanley HE. *PhysioBank, PhysioToolkit, and
+> PhysioNet: Components of a New Research Resource for Complex Physiologic
+> Signals.* Circulation 101(23):e215-e220 (2000).
+
+Database: https://physionet.org/content/mitdb/1.0.0/
+
+The inter-patient evaluation protocol (the DS1 / DS2 record split used here) is from:
+
+> de Chazal P, O'Dwyer M, Reilly RB. *Automatic classification of heartbeats using
+> ECG morphology and heartbeat interval features.* IEEE Trans Biomed Eng
+> 51(7):1196-1206 (2004).
+
+## Licence
+
+Code is MIT licensed — see [LICENSE](LICENSE). The licence covers this repository's
+code only, not the MIT-BIH data, which remains under PhysioNet's terms.
+
+## A note on scope
+
+This is a learning project, built to practise the material in Courses 1-3 of the
+Deep Learning Specialization. **It is not a medical device and its results should
+not be read as a clinical claim.** The limitations are real and documented: one ECG
+lead, one database, 44 patients, and a class (F, fusion beats) that this data cannot
+support at all.

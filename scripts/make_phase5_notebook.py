@@ -48,7 +48,7 @@ We only do this once. Every choice we made until now was made by looking at the 
 set. If we now look at the test set and then change our mind, the test number stops
 meaning anything.
 
-The full write up is in `reports/strategy_memo.md`.
+The full reasoning is written out in the markdown cells below.
 """),
     code(HEADER),
     md("""
